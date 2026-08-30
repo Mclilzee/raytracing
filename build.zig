@@ -142,6 +142,16 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&run_mod_tests.step);
     test_step.dependOn(&run_exe_tests.step);
 
+    // Create a module just like in the `zig init` template.
+    const exe_mod = b.addModule("check", .{
+        .root_source_file = b.path("src/main.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
+    const exe_check = b.addExecutable(.{ .name = "check", .root_module = exe_mod });
+    const check = b.step("check", "Check compilation errors");
+    check.dependOn(&exe_check.step);
     // Just like flags, top level steps are also listed in the `--help` menu.
     //
     // The Zig build system is entirely implemented in userland, which means
