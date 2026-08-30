@@ -1,5 +1,4 @@
 const Vec3 = @import("vec.zig").Vec3;
-const Writer = @import("std").Io.Writer;
 
 pub const Self = @This();
 r: u8,

@@ -16,7 +16,6 @@ const image_width = 1200;
 const anti_aliacing_samples = 500;
 const defocus_angle = 0.06;
 const focus_dist = 10.0;
-const gamma = 0.1;
 const vfov = 20.0;
 const look_from = Vec3{ 13, 2, 3 };
 const look_at = Vec3{ 0, 0, 0 };

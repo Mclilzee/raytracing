@@ -1,12 +1,10 @@
 const std = @import("std");
 const ArrayList = std.ArrayList;
-const print = std.debug.print;
 const assert = std.debug.assert;
 const vec = @import("vec.zig");
 const Vec3 = vec.Vec3;
 const camera = @import("camera.zig");
 const Ray = camera.Ray;
-const Color = @import("Color.zig");
 const Hit = camera.Hit;
 const Material = @import("material.zig").Material;
 

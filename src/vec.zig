@@ -1,4 +1,3 @@
-const std = @import("std");
 const rand = @import("main.zig").rand;
 pub const Vec3 = @Vector(3, f64);
 pub const zero = Vec3{ 0.0, 0.0, 0.0 };

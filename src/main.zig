@@ -4,10 +4,8 @@ const vec = @import("vec.zig");
 const Vec3 = vec.Vec3;
 const material = @import("material.zig");
 const Material = material.Material;
-const Lambertian = material.Lambertian;
 const World = @import("world.zig").World;
 const Camera = @import("camera.zig").Camera;
-const raytracing = @import("raytracing");
 
 var random = Random.DefaultPrng.init(420);
 pub const rand = random.random();
