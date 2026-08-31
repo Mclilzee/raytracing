@@ -11,6 +11,18 @@ const Material = @import("material.zig").Material;
 pub const Object = struct {
     ptr: *anyopaque,
     hit: *const fn (ptr: *anyopaque, ray: *Ray) void,
+
+    fn create(object: anytype) Object {
+        return .{
+            .ptr = object,
+            .hit = (struct {
+                fn hit(ptr: *anyopaque, ray: *Ray) void {
+                    const obj: @TypeOf(object) = @ptrCast(@alignCast(ptr));
+                    obj.hit(ray);
+                }
+            }).hit,
+        };
+    }
 };
 
 pub const World = struct {
@@ -35,18 +47,7 @@ pub const World = struct {
     pub fn drawSphere(self: *Self, translation: Vec3, radius: f64, material: *const Material) std.mem.Allocator.Error!void {
         const sphere = try self.alloc.create(Sphere);
         sphere.* = .{ .p = translation, .r = radius, .material = material };
-        try self.objects.append(
-            self.alloc,
-            .{
-                .ptr = sphere,
-                .hit = (struct {
-                    fn hit(ptr: *anyopaque, ray: *Ray) void {
-                        const sph: *Sphere = @ptrCast(@alignCast(ptr));
-                        sph.hit(ray);
-                    }
-                }).hit,
-            },
-        );
+        try self.objects.append(self.alloc, Object.create(sphere));
     }
 
     pub fn addMaterial(self: *Self, material: Material) !*const Material {

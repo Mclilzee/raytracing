@@ -10,10 +10,10 @@ const World = @import("world.zig").World;
 const material = @import("material.zig");
 const Material = material.Material;
 
-const max_bounce_depth = 50;
+const max_bounce_depth = 10;
 const aspect_ratio = 16.0 / 9.0;
 const image_width = 1200;
-const anti_aliacing_samples = 500;
+const anti_aliacing_samples = 10;
 const defocus_angle = 0.06;
 const focus_dist = 10.0;
 const vfov = 20.0;
