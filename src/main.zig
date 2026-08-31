@@ -12,7 +12,7 @@ pub const rand = random.random();
 
 pub fn main(init: std.process.Init) !void {
     const alloc = init.arena.allocator();
-    var world: World = try World.init(alloc);
+    var world = World.init(alloc);
     defer world.deinit();
     const camera = Camera.init(alloc, init.io);
     try fullWorld(&world);

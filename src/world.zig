@@ -8,27 +8,45 @@ const Ray = camera.Ray;
 const Hit = camera.Hit;
 const Material = @import("material.zig").Material;
 
+pub const Object = struct {
+    ptr: *anyopaque,
+    hit: *const fn (ptr: *anyopaque, ray: *Ray) void,
+};
+
 pub const World = struct {
     alloc: std.mem.Allocator,
-    spheres: ArrayList(Sphere),
+    objects: ArrayList(Object),
     materials: ArrayList(Material),
 
     const Self = @This();
-    pub fn init(alloc: std.mem.Allocator) std.mem.Allocator.Error!Self {
+    pub fn init(alloc: std.mem.Allocator) Self {
         return .{
             .alloc = alloc,
-            .spheres = try ArrayList(Sphere).initCapacity(alloc, 8),
-            .materials = try ArrayList(Material).initCapacity(alloc, 8),
+            .objects = ArrayList(Object).empty,
+            .materials = ArrayList(Material).empty,
         };
     }
 
     pub fn deinit(self: *Self) void {
         self.materials.deinit(self.alloc);
-        self.spheres.deinit(self.alloc);
+        self.objects.deinit(self.alloc);
     }
 
     pub fn drawSphere(self: *Self, translation: Vec3, radius: f64, material: *const Material) std.mem.Allocator.Error!void {
-        try self.spheres.append(self.alloc, .{ .p = translation, .r = radius, .material = material });
+        const sphere = try self.alloc.create(Sphere);
+        sphere.* = .{ .p = translation, .r = radius, .material = material };
+        try self.objects.append(
+            self.alloc,
+            .{
+                .ptr = sphere,
+                .hit = (struct {
+                    fn hit(ptr: *anyopaque, ray: *Ray) void {
+                        const sph: *Sphere = @ptrCast(@alignCast(ptr));
+                        sph.hit(ray);
+                    }
+                }).hit,
+            },
+        );
     }
 
     pub fn addMaterial(self: *Self, material: Material) !*const Material {
@@ -38,12 +56,8 @@ pub const World = struct {
     }
 
     pub fn hit(self: *const Self, ray: *Ray) void {
-        hitItems(self.spheres.items, ray);
-    }
-
-    fn hitItems(array: anytype, ray: *Ray) void {
-        for (array) |item| {
-            item.hit(ray);
+        for (self.objects.items) |object| {
+            object.hit(object.ptr, ray);
         }
     }
 };
@@ -55,7 +69,7 @@ const Sphere = struct {
 
     const Self = @This();
 
-    fn hit(self: Self, ray: *Ray) void {
+    pub fn hit(self: *const Self, ray: *Ray) void {
         assert(self.r >= 0);
         const oc = self.p - ray.origin;
         const a = vec.dot(ray.direction, ray.direction);
