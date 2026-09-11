@@ -10,10 +10,10 @@ const World = @import("world.zig").World;
 const material = @import("material.zig");
 const Material = material.Material;
 
-const max_bounce_depth = 50;
+const max_bounce_depth = 10;
 const aspect_ratio = 16.0 / 9.0;
 const image_width = 1200;
-const anti_aliacing_samples = 500;
+const anti_aliacing_samples = 100;
 const defocus_angle = 0.06;
 const focus_dist = 10.0;
 const vfov = 20.0;
@@ -93,7 +93,25 @@ pub const Camera = struct {
             var hit_value = vec.zero;
             for (0..anti_aliacing_samples) |_| {
                 var ray = getRay(@floatFromInt(column), @floatFromInt(row));
-                hit_value += ray.cast(world, max_bounce_depth);
+                var color = vec.one;
+                for (0..max_bounce_depth) |_| {
+                    world.hit(&ray);
+                    if (ray.hit) |hit| {
+                        const scatter = hit.material.scatter(&hit, ray.direction) orelse {
+                            color = vec.zero;
+                            break;
+                        };
+                        ray = scatter.ray;
+                        color *= scatter.color;
+                    } else {
+                        const unit_direction = vec.unitVector(ray.direction);
+                        const a = vec.splat(0.5 * (unit_direction[1] + 1.0));
+                        color *= (vec.one - a) * vec.one + a * Vec3{ 0.5, 0.7, 1.0 };
+                        break;
+                    }
+                }
+
+                hit_value += color;
             }
 
             pixels_buffer[image_width * row + column] = Color.fromVec(hit_value * pixel_samples_scale);
@@ -124,23 +142,6 @@ pub const Ray = struct {
 
     pub fn at(self: Self, t: f64) Vec3 {
         return @mulAdd(Vec3, @splat(t), self.direction, self.origin);
-    }
-
-    fn cast(self: *Self, world: *const World, depth: u16) Vec3 {
-        if (depth == 0) {
-            return vec.zero;
-        }
-
-        world.hit(self);
-        if (self.hit) |hit| {
-            const scatter = hit.material.scatter(&hit, self.direction) orelse return vec.zero;
-            self.* = scatter.ray;
-            return scatter.color * self.cast(world, depth - 1);
-        }
-
-        const unit_direction = vec.unitVector(self.direction);
-        const a = vec.splat(0.5 * (unit_direction[1] + 1.0));
-        return (vec.one - a) * vec.one + a * Vec3{ 0.5, 0.7, 1.0 };
     }
 
     pub fn contains(self: Self, t: f64) bool {
