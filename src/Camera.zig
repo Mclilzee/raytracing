@@ -144,10 +144,6 @@ pub const Ray = struct {
         return @mulAdd(Vec3, @splat(t), self.direction, self.origin);
     }
 
-    pub fn contains(self: Self, t: f64) bool {
-        return self.min_t <= t and t <= self.max_t;
-    }
-
     pub fn surrounds(self: Self, t: f64) bool {
         return self.min_t < t and t < self.max_t;
     }
