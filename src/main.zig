@@ -42,7 +42,7 @@ fn fullWorld(world: *World) !void {
         while (b < 11) : (b += 1) {
             const choose_mat = rand.float(f64);
             const center = Vec3{ @as(f64, @floatFromInt(a)) + 0.9 * rand.float(f64), 0.2, b + 0.9 * rand.float(f64) };
-            if (vec.length(center - Vec3{ 4, 0.2, 0 }) > 0.9) {
+            if (vec.length(&(center - Vec3{ 4, 0.2, 0 })) > 0.9) {
                 if (choose_mat < 0.8) {
                     const albedo = Vec3{ rand.float(f64), rand.float(f64), rand.float(f64) };
                     const sphere_material = try world.addMaterial(Material.initLambertian(albedo));

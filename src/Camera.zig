@@ -1,7 +1,6 @@
 const std = @import("std");
 const rand = @import("main.zig").rand;
 const Writer = std.Io.Writer;
-const Progress = std.Progress;
 
 const Color = @import("Color.zig");
 const vec = @import("vec.zig");
@@ -12,18 +11,18 @@ const Material = material.Material;
 
 const max_bounce_depth = 10;
 const aspect_ratio = 16.0 / 9.0;
-const image_width = 1200;
+const image_width = 400;
 const anti_aliacing_samples = 100;
 const defocus_angle = 0.06;
 const focus_dist = 10.0;
 const vfov = 20.0;
 const look_from = Vec3{ 13, 2, 3 };
-const look_at = Vec3{ 0, 0, 0 };
+const look_at = vec.zero;
 const vup = Vec3{ 0, 1, 0 };
 
-const w = vec.unitVector(look_from - look_at);
-const u = vec.unitVector(vec.cross(vup, w));
-const v = vec.cross(w, u);
+const w = vec.unitVector(&(look_from - look_at));
+const u = vec.unitVector(&vec.cross(&vup, &w));
+const v = vec.cross(&w, &u);
 const theta = std.math.degreesToRadians(vfov);
 const h = std.math.tan(theta / 2.0);
 const pixel_samples_scale = vec.one / vec.splat(anti_aliacing_samples);
@@ -62,19 +61,13 @@ pub const Camera = struct {
 
         const pixels_buffer = try self.alloc.alloc(Color, image_width * image_height);
         defer self.alloc.free(pixels_buffer);
-        var progress_buffer: [4096]u8 = undefined;
-        const pr = Progress.start(self.io, .{
-            .estimated_total_items = image_height * image_width,
-            .draw_buffer = &progress_buffer,
-            .root_name = "Rendering",
-        });
         var wbuf: [4096]u8 = undefined;
         var file_writer = file.writer(self.io, &wbuf);
         const writer = &file_writer.interface;
-        var threads = try self.alloc.alloc(std.Thread, image_width);
+        var threads = try self.alloc.alloc(std.Thread, image_height);
         defer self.alloc.free(threads);
-        for (0..image_width) |column| {
-            threads[column] = try std.Thread.spawn(.{}, renderColumns, .{ world, column, pixels_buffer, &pr });
+        for (0..image_height) |row| {
+            threads[row] = try std.Thread.spawn(.{}, renderRow, .{ world, row, pixels_buffer });
         }
 
         for (threads) |t| {
@@ -83,13 +76,10 @@ pub const Camera = struct {
 
         try drawPixels(writer, pixels_buffer);
         try file_writer.flush();
-
-        pr.end();
     }
 
-    fn renderColumns(world: *const World, column: usize, pixels_buffer: []Color, pr: *const std.Progress.Node) void {
-        for (0..image_height) |row| {
-            pr.completeOne();
+    fn renderRow(world: *const World, row: usize, pixels_buffer: []Color) void {
+        for (0..image_width) |column| {
             var hit_value = vec.zero;
             for (0..anti_aliacing_samples) |_| {
                 var ray = getRay(@floatFromInt(column), @floatFromInt(row));
@@ -104,7 +94,7 @@ pub const Camera = struct {
                         ray = scatter.ray;
                         color *= scatter.color;
                     } else {
-                        const unit_direction = vec.unitVector(ray.direction);
+                        const unit_direction = vec.unitVector(&ray.direction);
                         const a = vec.splat(0.5 * (unit_direction[1] + 1.0));
                         color *= (vec.one - a) * vec.one + a * Vec3{ 0.5, 0.7, 1.0 };
                         break;
@@ -140,11 +130,11 @@ pub const Ray = struct {
 
     const Self = @This();
 
-    pub fn at(self: Self, t: f64) Vec3 {
+    pub fn at(self: *const Self, t: f64) Vec3 {
         return @mulAdd(Vec3, @splat(t), self.direction, self.origin);
     }
 
-    pub fn surrounds(self: Self, t: f64) bool {
+    pub fn surrounds(self: *const Self, t: f64) bool {
         return self.min_t < t and t < self.max_t;
     }
 };
@@ -156,9 +146,9 @@ pub const Hit = struct {
     front_face: bool = false,
     const Self = @This();
 
-    pub fn init(normal: Vec3, p: Vec3, ray: *Ray, m: *const Material) Self {
-        const front_face = vec.dot(ray.direction, normal) < 0;
-        const hit_normal = if (front_face) normal else -normal;
+    pub fn init(normal: *const Vec3, p: Vec3, ray: *Ray, m: *const Material) Self {
+        const front_face = vec.dot(&ray.direction, normal) < 0;
+        const hit_normal = if (front_face) normal.* else -normal.*;
         return Hit{ .normal = hit_normal, .p = p, .front_face = front_face, .material = m };
     }
 };

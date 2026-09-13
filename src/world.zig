@@ -55,12 +55,12 @@ const Sphere = struct {
 
     const Self = @This();
 
-    fn hit(self: Self, ray: *Ray) void {
+    fn hit(self: *const Self, ray: *Ray) void {
         assert(self.r >= 0);
         const oc = self.p - ray.origin;
-        const a = vec.dot(ray.direction, ray.direction);
-        const h = vec.dot(ray.direction, oc);
-        const c = vec.dot(oc, oc) - self.r * self.r;
+        const a = vec.dot(&ray.direction, &ray.direction);
+        const h = vec.dot(&ray.direction, &oc);
+        const c = vec.dot(&oc, &oc) - self.r * self.r;
         const discriminant = h * h - a * c;
         if (discriminant < 0) {
             return;
@@ -76,6 +76,6 @@ const Sphere = struct {
         ray.max_t = root;
         const p = ray.at(root);
         const normal = (p - self.p) / vec.splat(self.r);
-        ray.hit = Hit.init(normal, p, ray, self.material);
+        ray.hit = Hit.init(&normal, p, ray, self.material);
     }
 };

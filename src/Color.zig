@@ -11,7 +11,7 @@ pub const blue = Self{ .r = 0, .g = 0, .b = 255 };
 pub const white = Self{ .r = 255, .g = 255, .b = 255 };
 pub const black = Self{ .r = 0, .g = 0, .b = 0 };
 
-pub fn bytes(self: Self) [3]u8 {
+pub fn bytes(self: *const Self) [3]u8 {
     return .{ self.r, self.g, self.b };
 }
 
