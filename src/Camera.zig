@@ -9,7 +9,7 @@ const World = @import("world.zig").World;
 const material = @import("material.zig");
 const Material = material.Material;
 
-const max_bounce_depth = 10;
+const max_bounce_depth = 50;
 const aspect_ratio = 16.0 / 9.0;
 const image_width = 400;
 const anti_aliacing_samples = 100;
@@ -25,7 +25,7 @@ const u = vec.unitVector(&vec.cross(&vup, &w));
 const v = vec.cross(&w, &u);
 const theta = std.math.degreesToRadians(vfov);
 const h = std.math.tan(theta / 2.0);
-const pixel_samples_scale = vec.one / vec.splat(anti_aliacing_samples);
+const pixel_samples_scale = vec.splat(1.0 / @as(comptime_float, anti_aliacing_samples));
 const image_height = blk: {
     const height: comptime_int = @trunc(@as(comptime_float, @floatFromInt(image_width)) / aspect_ratio);
     if (height < 1) break :blk 1 else break :blk height;
@@ -87,7 +87,7 @@ pub const Camera = struct {
                 for (0..max_bounce_depth) |_| {
                     world.hit(&ray);
                     if (ray.hit) |hit| {
-                        const scatter = hit.material.scatter(&hit, ray.direction) orelse {
+                        const scatter = hit.material.scatter(&hit, &ray.direction) orelse {
                             color = vec.zero;
                             break;
                         };

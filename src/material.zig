@@ -28,8 +28,8 @@ pub const Metal = struct {
 
     const Self = @This();
 
-    fn scatter(self: *const Self, hit: *const Hit, direction: Vec3) ?Scatter {
-        const ref = vec.reflect(&direction, &hit.normal);
+    fn scatter(self: *const Self, hit: *const Hit, direction: *const Vec3) ?Scatter {
+        const ref = vec.reflect(direction, &hit.normal);
         const reflected = vec.unitVector(&ref) + (vec.splat(self.fuzz) * vec.randomUnitVectorWithRange(-1, 1));
         if (vec.dot(&reflected, &hit.normal) <= 0) {
             return null;
@@ -43,9 +43,9 @@ pub const Dilectric = struct {
 
     const Self = @This();
 
-    fn scatter(self: *const Self, hit: *const Hit, direction: Vec3) Scatter {
+    fn scatter(self: *const Self, hit: *const Hit, direction: *const Vec3) Scatter {
         const ri = if (hit.front_face) 1.0 / self.refraction_index else self.refraction_index;
-        const unit_direction = vec.unitVector(&direction);
+        const unit_direction = vec.unitVector(direction);
         const cos_theta = @min(vec.dot(&-unit_direction, &hit.normal), 1.0);
         const sin_theta = @sqrt(1.0 - cos_theta * cos_theta);
         const dir = if (ri * sin_theta > 1.0 or reflectance(cos_theta, ri) > rand.float(f64)) vec.reflect(&unit_direction, &hit.normal) else vec.refract(&unit_direction, &hit.normal, ri);
@@ -64,7 +64,7 @@ pub const Material = union(enum) {
     metal: Metal,
     dielectric: Dilectric,
 
-    pub fn scatter(self: Material, hit: *const Hit, direction: Vec3) ?Scatter {
+    pub fn scatter(self: Material, hit: *const Hit, direction: *const Vec3) ?Scatter {
         return switch (self) {
             .lambertian => |l| l.scatter(hit),
             .metal => |m| m.scatter(hit, direction),
