@@ -9,7 +9,7 @@ const World = @import("world.zig").World;
 const material = @import("material.zig");
 const Material = material.Material;
 
-const max_bounce_depth = 10;
+const max_bounce_depth = 50;
 const aspect_ratio = 16.0 / 9.0;
 const image_width = 400;
 const anti_aliacing_samples = 100;
@@ -64,15 +64,14 @@ pub const Camera = struct {
         var wbuf: [4096]u8 = undefined;
         var file_writer = file.writer(self.io, &wbuf);
         const writer = &file_writer.interface;
-        var threads = try self.alloc.alloc(std.Thread, image_height);
-        defer self.alloc.free(threads);
+        var group: std.Io.Group = .init;
+        defer group.cancel(self.io);
+
         for (0..image_height) |row| {
-            threads[row] = try std.Thread.spawn(.{}, renderRow, .{ world, row, pixels_buffer });
+            try group.concurrent(self.io, renderRow, .{ world, row, pixels_buffer });
         }
 
-        for (threads) |t| {
-            t.join();
-        }
+        try group.await(self.io);
 
         try drawPixels(writer, pixels_buffer);
         try file_writer.flush();

@@ -14,7 +14,9 @@ pub fn main(init: std.process.Init) !void {
     const alloc = init.arena.allocator();
     var world: World = try World.init(alloc);
     defer world.deinit();
-    const camera = Camera.init(alloc, init.io);
+    var pool: std.Io.Threaded = .init(alloc, .{});
+    defer pool.deinit();
+    const camera = Camera.init(alloc, pool.io());
     try fullWorld(&world);
     try camera.render(&world);
 }
